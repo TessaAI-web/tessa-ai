@@ -22,7 +22,7 @@ except ImportError:
 # ==========================================
 GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
 
-# Inicializamos el cliente oficial de Google GenAI (soluciona automáticamente rutas y versiones)
+# Cliente oficial de Google GenAI
 client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 chroma_client = chromadb.PersistentClient(path="./tessa_vector_db")
@@ -198,7 +198,7 @@ if "ifc_resumen_actual" not in st.session_state:
 
 st.sidebar.markdown("<div class='hud-header'>// TESSA.SYS // UNIVERSAL</div>", unsafe_allow_html=True)
 st.sidebar.markdown("### TESSA IA UNIVERSAL")
-st.sidebar.markdown("<p style='font-size: 10px; color: #38bdf8;'>MODELO ACTIVO: GEMINI 2.5 FLASH (OFICIAL)</p>", unsafe_allow_html=True)
+st.sidebar.markdown("<p style='font-size: 10px; color: #38bdf8;'>MODELO ACTIVO: GEMINI 3.8 FLASH</p>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
 if st.sidebar.button("[ + ] NUEVA SESIÓN / PESTAÑA", use_container_width=True):
@@ -243,9 +243,9 @@ def generar_respuesta_ia(prompt_completo):
     if not client:
         return "[ALERTA DE NÚCLEO]: Falta configurar la GEMINI_API_KEY en los Secrets de Streamlit."
     try:
-        # Usamos el SDK oficial de Google que maneja la comunicación de forma transparente y estable
+        # Aquí está la clave definitiva: usando estrictamente el modelo exigido por la API de Google
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-3.8-flash',
             contents=prompt_completo,
         )
         return response.text
