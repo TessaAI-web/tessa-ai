@@ -19,28 +19,12 @@ except ImportError:
     import ifcopenshell
 
 # ==========================================
-# NÚCLEO AUTODETECTABLE DE TESSA IA
+# NÚCLEO DE TESSA IA
 # ==========================================
 GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
 
-def obtener_modelo_disponible():
-    """Consulta directamente a Google qué modelo soporta generateContent con tu API Key"""
-    try:
-        url = f"https://generativelanguage.googleapis.com/v1/models?key={GEMINI_API_KEY}"
-        res = requests.get(url)
-        if res.status_code == 200:
-            datos = res.json()
-            for m in datos.get("models", []):
-                nombre = m.get("name", "") # ej: models/gemini-1.5-flash
-                metodos = m.get("supportedGenerationMethods", [])
-                if "generateContent" in metodos and ("flash" in nombre or "pro" in nombre):
-                    return nombre.replace("models/", "")
-    except Exception:
-        pass
-    return "gemini-1.5-flash" # Respaldo por defecto
-
-# Obtenemos el modelo exacto que tu llave tiene autorizado
-MODELO_DINAMICO = obtener_modelo_disponible()
+# Usamos directamente un modelo estable y actual para evitar errores 404
+MODELO_ACTIVO = "gemini-1.5-flash"
 
 chroma_client = chromadb.PersistentClient(path="./tessa_vector_db")
 collection = chroma_client.get_or_create_collection(
@@ -224,7 +208,7 @@ if "ifc_resumen_actual" not in st.session_state:
 
 st.sidebar.markdown("<div class='hud-header'>// TESSA.SYS // UNIVERSAL</div>", unsafe_allow_html=True)
 st.sidebar.markdown("### TESSA IA UNIVERSAL")
-st.sidebar.markdown(f"<p style='font-size: 10px; color: #38bdf8;'>MODELO ACTIVO: {MODELO_DINAMICO}</p>", unsafe_allow_html=True)
+st.sidebar.markdown(f"<p style='font-size: 10px; color: #38bdf8;'>MODELO ACTIVO: {MODELO_ACTIVO}</p>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
 modo_deep_research = st.sidebar.toggle("MODO INVESTIGACIÓN WEB", value=False)
@@ -268,8 +252,7 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 def generar_respuesta_ia(prompt_completo):
-    # Usamos la ruta v1 con el modelo autodetectado dinámicamente
-    url = f"https://generativelanguage.googleapis.com/v1/models/{MODELO_DINAMICO}:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1/models/{MODELO_ACTIVO}:generateContent?key={GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     
     payload = {
