@@ -110,7 +110,7 @@ def analizar_archivo_ifc(archivo_ifc_path):
     except Exception as e:
         return "[Error IFC]: " + str(e)
 
-search = DuckDuckGoSearchRun()
+# search = DuckDuckGoSearchRun()
 
 def investigacion_profunda_web(consulta_usuario):
     try:
