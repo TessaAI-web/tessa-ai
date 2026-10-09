@@ -1,10 +1,9 @@
 import os
 import math
-import requests
 import json
 import streamlit as st
-# from langchain_community.tools import DuckDuckGoSearchRun
 import chromadb
+from google import genai
 
 try:
     from pypdf import PdfReader
@@ -19,12 +18,12 @@ except ImportError:
     import ifcopenshell
 
 # ==========================================
-# NÚCLEO DE TESSA IA
+# NÚCLEO OFICIAL DE TESSA IA
 # ==========================================
 GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
 
-# Usamos directamente un modelo estable y actual para evitar errores 404
-MODELO_ACTIVO = "gemini-1.5-flash"
+# Inicializamos el cliente oficial de Google GenAI (soluciona automáticamente rutas y versiones)
+client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 chroma_client = chromadb.PersistentClient(path="./tessa_vector_db")
 collection = chroma_client.get_or_create_collection(
@@ -93,15 +92,6 @@ def analizar_archivo_ifc(archivo_ifc_path):
         return resumen
     except Exception as e:
         return "[Error IFC]: " + str(e)
-
-# search = DuckDuckGoSearchRun()
-
-def investigacion_profunda_web(consulta_usuario):
-    try:
-        res = search.run(consulta_usuario)
-        return "\n[Investigación Web]:\n" + res + "\n"
-    except Exception as e:
-        return ""
 
 st.set_page_config(page_title="Tessa IA // Universal HUD", page_icon="🔭", layout="wide")
 
@@ -208,10 +198,8 @@ if "ifc_resumen_actual" not in st.session_state:
 
 st.sidebar.markdown("<div class='hud-header'>// TESSA.SYS // UNIVERSAL</div>", unsafe_allow_html=True)
 st.sidebar.markdown("### TESSA IA UNIVERSAL")
-st.sidebar.markdown(f"<p style='font-size: 10px; color: #38bdf8;'>MODELO ACTIVO: {MODELO_ACTIVO}</p>", unsafe_allow_html=True)
+st.sidebar.markdown("<p style='font-size: 10px; color: #38bdf8;'>MODELO ACTIVO: GEMINI 2.5 FLASH (OFICIAL)</p>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
-
-modo_deep_research = st.sidebar.toggle("MODO INVESTIGACIÓN WEB", value=False)
 
 if st.sidebar.button("[ + ] NUEVA SESIÓN / PESTAÑA", use_container_width=True):
     st.session_state.messages = []
@@ -252,28 +240,17 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 def generar_respuesta_ia(prompt_completo):
-    url = f"https://generativelanguage.googleapis.com/v1/models/{MODELO_ACTIVO}:generateContent?key={GEMINI_API_KEY}"
-    headers = {"Content-Type": "application/json"}
-    
-    payload = {
-        "contents": [
-            {
-                "parts": [
-                    {"text": SYSTEM_PROMPT + "\n\n" + prompt_completo}
-                ]
-            }
-        ]
-    }
-    
+    if not client:
+        return "[ALERTA DE NÚCLEO]: Falta configurar la GEMINI_API_KEY en los Secrets de Streamlit."
     try:
-        response = requests.post(url, headers=headers, data=json.dumps(payload))
-        if response.status_code == 200:
-            data = response.json()
-            return data["candidates"][0]["content"]["parts"][0]["text"]
-        else:
-            return f"[ALERTA DE NÚCLEO API]: Código {response.status_code} - {response.text}"
+        # Usamos el SDK oficial de Google que maneja la comunicación de forma transparente y estable
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt_completo,
+        )
+        return response.text
     except Exception as e:
-        return f"[ALERTA DE NÚCLEO]: {str(e)}"
+        return f"[ALERTA DE NÚCLEO API]: {str(e)}"
 
 if prompt := st.chat_input("INTRODUCE CUALQUIER CONSULTA..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -287,9 +264,6 @@ if prompt := st.chat_input("INTRODUCE CUALQUIER CONSULTA..."):
             
             if st.session_state.ifc_resumen_actual and any(k in prompt.lower() for k in ["ifc", "bim", "columna", "viga", "muro", "estructura", "modelo"]):
                 contexto_extra += "\n[Datos BIM en Memoria]:\n" + st.session_state.ifc_resumen_actual + "\n"
-            
-            if modo_deep_research:
-                contexto_extra += investigacion_profunda_web(prompt)
 
             historial_reciente = st.session_state.messages[-6:-1]
             texto_historial = "--- HISTORIAL RECIENTE ---\n"
@@ -297,7 +271,7 @@ if prompt := st.chat_input("INTRODUCE CUALQUIER CONSULTA..."):
                 rol_txt = "Gabriel" if msg["role"] == "user" else "Tessa"
                 texto_historial += f"{rol_txt}: {msg['content']}\n"
 
-            prompt_final = texto_historial + "\n" + contexto_extra + "\n--- CONSULTA ACTUAL ---\n" + prompt
+            prompt_final = SYSTEM_PROMPT + "\n\n" + texto_historial + "\n" + contexto_extra + "\n--- CONSULTA ACTUAL ---\n" + prompt
 
             respuesta_asistente = generar_respuesta_ia(prompt_final)
             status_box.update(label="¡LISTO!", state="complete", expanded=False)

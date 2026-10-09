@@ -1,7 +1,6 @@
 streamlit
 requests
-langchain-community
+google-genai
 chromadb
 pypdf
 ifcopenshell
-duckduckgo-search
