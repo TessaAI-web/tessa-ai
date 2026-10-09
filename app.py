@@ -3,7 +3,7 @@ import math
 import requests
 import json
 import streamlit as st
-from langchain_community.tools import DuckDuckGoSearchRun
+# from langchain_community.tools import DuckDuckGoSearchRun
 import chromadb
 
 try:
