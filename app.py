@@ -37,7 +37,7 @@ def obtener_modelo_disponible():
                     return nombre.replace("models/", "")
     except Exception:
         pass
-    return "gemini-1.5-flash" # Respaldo por defecto
+    return "gemini-3.8-flash" # Respaldo por defecto
 
 # Obtenemos el modelo exacto que tu llave tiene autorizado
 MODELO_DINAMICO = obtener_modelo_disponible()
